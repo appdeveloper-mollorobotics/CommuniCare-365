@@ -9,11 +9,9 @@ DB_FILE = "records.db"
 
 
 class Route(TypedDict):
-    id: int
-    name: str
-    start_location: str
-    end_location: str
-    waypoints: str
+    setuserid: str
+    endpoint: Optional[str]
+    connection: str
 
 
 class RouteState(rx.State):
@@ -27,16 +25,16 @@ class RouteState(rx.State):
             with sqlite3.connect(DB_FILE) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "\n                    CREATE TABLE IF NOT EXISTS routes (\n                        id INTEGER PRIMARY KEY AUTOINCREMENT,\n                        name TEXT NOT NULL,\n                        start_location TEXT,\n                        end_location TEXT,\n                        waypoints TEXT\n                    )\n                    "
+                    "\n                    CREATE TABLE IF NOT EXISTS routes (\n                        setuserid TEXT PRIMARY KEY,\n                        endpoint TEXT,\n                        connection TEXT NOT NULL\n                    )\n                    "
                 )
                 cursor.execute("SELECT COUNT(*) FROM routes")
                 if cursor.fetchone()[0] == 0:
                     sample_data = [
-                        ("Route A", "City A", "City B", "[]"),
-                        ("Route B", "City C", "City D", "[]"),
+                        ("user1", "/api/v1/data", "active"),
+                        ("user2", "/api/v1/status", "inactive"),
                     ]
                     cursor.executemany(
-                        "INSERT INTO routes (name, start_location, end_location, waypoints) VALUES (?,?,?,?)",
+                        "INSERT INTO routes (setuserid, endpoint, connection) VALUES (?,?,?)",
                         sample_data,
                     )
                     logging.info(
@@ -51,7 +49,7 @@ class RouteState(rx.State):
         self._init_db()
         try:
             with sqlite3.connect(DB_FILE) as conn:
-                df = pd.read_sql("SELECT * FROM routes ORDER BY name", conn)
+                df = pd.read_sql("SELECT * FROM routes ORDER BY setuserid", conn)
             self.routes = df.to_dict("records")
         except Exception as e:
             logging.exception(f"Error fetching routes: {e}")
@@ -79,12 +77,11 @@ class RouteState(rx.State):
             with sqlite3.connect(DB_FILE) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO routes (name, start_location, end_location, waypoints) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO routes (setuserid, endpoint, connection) VALUES (?, ?, ?)",
                     (
-                        form_data["name"],
-                        form_data["start_location"],
-                        form_data["end_location"],
-                        form_data.get("waypoints", "[]"),
+                        form_data["setuserid"],
+                        form_data["endpoint"],
+                        form_data["connection"],
                     ),
                 )
                 conn.commit()
@@ -104,13 +101,11 @@ class RouteState(rx.State):
             with sqlite3.connect(DB_FILE) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "UPDATE routes SET name=?, start_location=?, end_location=?, waypoints=? WHERE id=?",
+                    "UPDATE routes SET endpoint=?, connection=? WHERE setuserid=?",
                     (
-                        form_data["name"],
-                        form_data["start_location"],
-                        form_data["end_location"],
-                        form_data.get("waypoints", "[]"),
-                        self.selected_route["id"],
+                        form_data["endpoint"],
+                        form_data["connection"],
+                        self.selected_route["setuserid"],
                     ),
                 )
                 conn.commit()
@@ -123,17 +118,17 @@ class RouteState(rx.State):
         yield RouteState.fetch_routes
         yield RouteState.deselect_route
 
-    def _delete_route_db(self, route_id: int):
+    def _delete_route_db(self, route_id: str):
         try:
             with sqlite3.connect(DB_FILE) as conn:
                 cursor = conn.cursor()
-                cursor.execute("DELETE FROM routes WHERE id=?", (route_id,))
+                cursor.execute("DELETE FROM routes WHERE setuserid=?", (route_id,))
                 conn.commit()
         except Exception as e:
             logging.exception(f"Error deleting route: {e}")
 
     @rx.event
-    def delete_route(self, route_id: int):
+    def delete_route(self, route_id: str):
         self._delete_route_db(route_id)
         yield RouteState.fetch_routes
         yield RouteState.deselect_route

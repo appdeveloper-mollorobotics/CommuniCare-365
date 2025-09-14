@@ -14,60 +14,46 @@ def route_form() -> rx.Component:
         ),
         rx.el.form(
             rx.el.input(
-                name="name",
-                placeholder="Route Name",
-                default_value=rx.cond(
-                    RouteState.selected_route, RouteState.selected_route["name"], ""
-                ),
-                key=rx.cond(
-                    RouteState.selected_route,
-                    RouteState.selected_route["id"].to(str) + "name",
-                    "new_name",
-                ),
-                class_name="w-full p-2 border rounded-md",
-            ),
-            rx.el.input(
-                name="start_location",
-                placeholder="Start Location",
+                name="setuserid",
+                placeholder="Set User ID",
                 default_value=rx.cond(
                     RouteState.selected_route,
-                    RouteState.selected_route["start_location"],
+                    RouteState.selected_route["setuserid"],
                     "",
                 ),
                 key=rx.cond(
                     RouteState.selected_route,
-                    RouteState.selected_route["id"].to(str) + "start",
-                    "new_start",
+                    RouteState.selected_route["setuserid"].to(str) + "setuserid",
+                    "new_setuserid",
+                ),
+                is_disabled=RouteState.is_editing,
+                class_name="w-full p-2 border rounded-md bg-gray-50 disabled:opacity-75",
+            ),
+            rx.el.input(
+                name="endpoint",
+                placeholder="Endpoint",
+                default_value=rx.cond(
+                    RouteState.selected_route, RouteState.selected_route["endpoint"], ""
+                ),
+                key=rx.cond(
+                    RouteState.selected_route,
+                    RouteState.selected_route["setuserid"].to(str) + "endpoint",
+                    "new_endpoint",
                 ),
                 class_name="w-full p-2 border rounded-md",
             ),
             rx.el.input(
-                name="end_location",
-                placeholder="End Location",
+                name="connection",
+                placeholder="Connection",
                 default_value=rx.cond(
                     RouteState.selected_route,
-                    RouteState.selected_route["end_location"],
+                    RouteState.selected_route["connection"],
                     "",
                 ),
                 key=rx.cond(
                     RouteState.selected_route,
-                    RouteState.selected_route["id"].to(str) + "end",
-                    "new_end",
-                ),
-                class_name="w-full p-2 border rounded-md",
-            ),
-            rx.el.input(
-                name="waypoints",
-                placeholder="Waypoints (JSON array)",
-                default_value=rx.cond(
-                    RouteState.selected_route,
-                    RouteState.selected_route["waypoints"],
-                    "[]",
-                ),
-                key=rx.cond(
-                    RouteState.selected_route,
-                    RouteState.selected_route["id"].to(str) + "waypoints",
-                    "new_waypoints",
+                    RouteState.selected_route["setuserid"].to(str) + "connection",
+                    "new_connection",
                 ),
                 class_name="w-full p-2 border rounded-md",
             ),
@@ -107,9 +93,9 @@ def routes_table() -> rx.Component:
             rx.el.table(
                 rx.el.thead(
                     rx.el.tr(
-                        rx.el.th("Name", class_name="px-4 py-2 text-left"),
-                        rx.el.th("Start", class_name="px-4 py-2 text-left"),
-                        rx.el.th("End", class_name="px-4 py-2 text-left"),
+                        rx.el.th("SetUserID", class_name="px-4 py-2 text-left"),
+                        rx.el.th("Endpoint", class_name="px-4 py-2 text-left"),
+                        rx.el.th("Connection", class_name="px-4 py-2 text-left"),
                         rx.el.th("Actions", class_name="px-4 py-2 text-right"),
                         class_name="bg-gray-50 border-b",
                     )
@@ -118,9 +104,9 @@ def routes_table() -> rx.Component:
                     rx.foreach(
                         RouteState.routes,
                         lambda route: rx.el.tr(
-                            rx.el.td(route["name"], class_name="px-4 py-2"),
-                            rx.el.td(route["start_location"], class_name="px-4 py-2"),
-                            rx.el.td(route["end_location"], class_name="px-4 py-2"),
+                            rx.el.td(route["setuserid"], class_name="px-4 py-2"),
+                            rx.el.td(route["endpoint"], class_name="px-4 py-2"),
+                            rx.el.td(route["connection"], class_name="px-4 py-2"),
                             rx.el.td(
                                 rx.el.div(
                                     rx.el.button(
@@ -131,7 +117,7 @@ def routes_table() -> rx.Component:
                                     rx.el.button(
                                         "Delete",
                                         on_click=lambda: RouteState.delete_route(
-                                            route["id"]
+                                            route["setuserid"]
                                         ),
                                         class_name="text-red-500 hover:underline",
                                     ),
