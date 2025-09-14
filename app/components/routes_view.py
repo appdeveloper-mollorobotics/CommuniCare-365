@@ -90,45 +90,50 @@ def routes_table() -> rx.Component:
             class_name="flex justify-between items-center mb-4",
         ),
         rx.el.div(
-            rx.el.table(
-                rx.el.thead(
-                    rx.el.tr(
-                        rx.el.th("SetUserID", class_name="px-4 py-2 text-left"),
-                        rx.el.th("Endpoint", class_name="px-4 py-2 text-left"),
-                        rx.el.th("Connection", class_name="px-4 py-2 text-left"),
-                        rx.el.th("Actions", class_name="px-4 py-2 text-right"),
-                        class_name="bg-gray-50 border-b",
-                    )
-                ),
-                rx.el.tbody(
-                    rx.foreach(
-                        RouteState.routes,
-                        lambda route: rx.el.tr(
-                            rx.el.td(route["setuserid"], class_name="px-4 py-2"),
-                            rx.el.td(route["endpoint"], class_name="px-4 py-2"),
-                            rx.el.td(route["connection"], class_name="px-4 py-2"),
-                            rx.el.td(
-                                rx.el.div(
-                                    rx.el.button(
-                                        "Edit",
-                                        on_click=lambda: RouteState.select_route(route),
-                                        class_name="text-blue-500 hover:underline mr-2",
-                                    ),
-                                    rx.el.button(
-                                        "Delete",
-                                        on_click=lambda: RouteState.delete_route(
-                                            route["setuserid"]
+            rx.el.div(
+                rx.el.table(
+                    rx.el.thead(
+                        rx.el.tr(
+                            rx.el.th("SetUserID", class_name="px-4 py-2 text-left"),
+                            rx.el.th("Endpoint", class_name="px-4 py-2 text-left"),
+                            rx.el.th("Connection", class_name="px-4 py-2 text-left"),
+                            rx.el.th("Actions", class_name="px-4 py-2 text-right"),
+                            class_name="bg-gray-50 border-b",
+                        )
+                    ),
+                    rx.el.tbody(
+                        rx.foreach(
+                            RouteState.routes,
+                            lambda route: rx.el.tr(
+                                rx.el.td(route["setuserid"], class_name="px-4 py-2"),
+                                rx.el.td(route["endpoint"], class_name="px-4 py-2"),
+                                rx.el.td(route["connection"], class_name="px-4 py-2"),
+                                rx.el.td(
+                                    rx.el.div(
+                                        rx.el.button(
+                                            "Edit",
+                                            on_click=lambda: RouteState.select_route(
+                                                route
+                                            ),
+                                            class_name="text-blue-500 hover:underline mr-2",
                                         ),
-                                        class_name="text-red-500 hover:underline",
-                                    ),
-                                    class_name="flex justify-end",
-                                )
+                                        rx.el.button(
+                                            "Delete",
+                                            on_click=lambda: RouteState.delete_route(
+                                                route["setuserid"]
+                                            ),
+                                            class_name="text-red-500 hover:underline",
+                                        ),
+                                        class_name="flex justify-end",
+                                    )
+                                ),
+                                class_name="border-b hover:bg-gray-100",
                             ),
-                            class_name="border-b hover:bg-gray-100",
-                        ),
-                    )
+                        )
+                    ),
+                    class_name="w-full text-sm",
                 ),
-                class_name="w-full text-sm",
+                class_name="overflow-x-auto",
             ),
             class_name="overflow-y-auto border rounded-lg",
         ),
