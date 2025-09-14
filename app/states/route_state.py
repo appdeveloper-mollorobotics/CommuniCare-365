@@ -69,7 +69,7 @@ class RouteState(rx.State):
 
     @rx.event
     def handle_submit(self, form_data: dict):
-        if self.is_editing and self.selected_route:
+        if self.selected_route:
             return RouteState.update_route(form_data)
         else:
             return RouteState.add_route(form_data)
@@ -140,5 +140,5 @@ class RouteState(rx.State):
 
     @rx.event
     def set_new_route(self):
-        self.is_editing = True
         self.selected_route = None
+        self.is_editing = True
