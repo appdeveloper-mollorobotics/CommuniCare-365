@@ -102,3 +102,6 @@ websockets==15.0.1
 wrapt==1.17.3
 wsproto==1.2.0
 yarl==1.20.1
+databases
+sqlalchemy
+psycopg2-binary
