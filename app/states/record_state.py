@@ -2,12 +2,10 @@ import reflex as rx
 import reflex_enterprise as rxe
 from reflex_enterprise.components.map.types import LatLng, latlng
 import pandas as pd
-import sqlite3
 import json
 import logging
 from typing import TypedDict
-
-DB_FILE = "records.db"
+from sqlalchemy import text
 
 
 class Record(TypedDict):
@@ -34,59 +32,26 @@ class RecordState(rx.State):
     def set_active_tab(self, tab: str):
         self.active_tab = tab
 
-    def _init_db(self):
-        """Initializes the database and creates the records table if it doesn't exist."""
-        try:
-            conn = sqlite3.connect(DB_FILE)
-            cursor = conn.cursor()
-            cursor.execute(
-                "\n                CREATE TABLE IF NOT EXISTS records (\n                    userid INTEGER,\n                    username TEXT,\n                    vehicle_reg TEXT,\n                    created_at TEXT,\n                    contact_number TEXT,\n                    gps_location TEXT,\n                    images TEXT\n                )\n            "
-            )
-            cursor.execute("SELECT COUNT(*) FROM records")
-            if cursor.fetchone()[0] == 0:
-                sample_data = [
-                    (
-                        1,
-                        "user",
-                        "ABC-123",
-                        "2023-10-27 10:00:00",
-                        "123-456-7890",
-                        "51.5074,-0.1278",
-                        "[]",
-                    ),
-                    (
-                        2,
-                        "admin",
-                        "XYZ-789",
-                        "2023-10-28 11:30:00",
-                        "987-654-3210",
-                        "48.8566,2.3522",
-                        "[]",
-                    ),
-                ]
-                cursor.executemany(
-                    "INSERT INTO records VALUES (?,?,?,?,?,?,?)", sample_data
-                )
-                logging.info("Database initialized and populated with sample data.")
-            conn.commit()
-            conn.close()
-        except Exception as e:
-            logging.exception(f"Error initializing database: {e}")
-
     @rx.event
     async def fetch_records(self):
-        self._init_db()
         try:
-            conn = sqlite3.connect(DB_FILE)
-            df = pd.read_sql("SELECT * FROM records ORDER BY created_at DESC", conn)
-            conn.close()
-            if "created_at" in df.columns:
-                df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
-                    "%Y-%m-%d %H:%M:%S"
+            async with rx.asession() as session:
+                result = await session.execute(
+                    text("SELECT * FROM records ORDER BY created_at DESC")
                 )
-            self.records = df.to_dict("records")
-            unique_usernames = sorted(df["username"].dropna().unique().tolist())
-            self.usernames = ["All"] + unique_usernames
+                records = result.mappings().all()
+            df = pd.DataFrame(records)
+            if not df.empty:
+                if "created_at" in df.columns:
+                    df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                self.records = df.to_dict("records")
+                unique_usernames = sorted(df["username"].dropna().unique().tolist())
+                self.usernames = ["All"] + unique_usernames
+            else:
+                self.records = []
+                self.usernames = ["All"]
         except Exception as e:
             logging.exception(f"Error fetching records: {e}")
             self.records = []

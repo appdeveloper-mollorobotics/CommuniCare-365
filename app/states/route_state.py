@@ -1,11 +1,8 @@
 import reflex as rx
 import pandas as pd
-import sqlite3
-import json
 import logging
 from typing import TypedDict, Optional
-
-DB_FILE = "records.db"
+from sqlalchemy import text
 
 
 class Route(TypedDict):
@@ -19,38 +16,14 @@ class RouteState(rx.State):
     selected_route: Optional[Route] = None
     is_editing: bool = False
 
-    def _init_db(self):
-        """Initializes the database and creates the routes table if it doesn't exist."""
-        try:
-            with sqlite3.connect(DB_FILE) as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "\n                    CREATE TABLE IF NOT EXISTS routes (\n                        setuserid TEXT PRIMARY KEY,\n                        endpoint TEXT,\n                        connection TEXT NOT NULL\n                    )\n                    "
-                )
-                cursor.execute("SELECT COUNT(*) FROM routes")
-                if cursor.fetchone()[0] == 0:
-                    sample_data = [
-                        ("user1", "/api/v1/data", "active"),
-                        ("user2", "/api/v1/status", "inactive"),
-                    ]
-                    cursor.executemany(
-                        "INSERT INTO routes (setuserid, endpoint, connection) VALUES (?,?,?)",
-                        sample_data,
-                    )
-                    logging.info(
-                        "Database initialized and populated with sample route data."
-                    )
-                conn.commit()
-        except Exception as e:
-            logging.exception(f"Error initializing routes table: {e}")
-
     @rx.event
-    def fetch_routes(self):
-        self._init_db()
+    async def fetch_routes(self):
         try:
-            with sqlite3.connect(DB_FILE) as conn:
-                df = pd.read_sql("SELECT * FROM routes ORDER BY setuserid", conn)
-            self.routes = df.to_dict("records")
+            async with rx.asession() as session:
+                result = await session.execute(
+                    text("SELECT * FROM routes ORDER BY setuserid")
+                )
+                self.routes = result.mappings().all()
         except Exception as e:
             logging.exception(f"Error fetching routes: {e}")
             self.routes = []
@@ -72,64 +45,65 @@ class RouteState(rx.State):
         else:
             return RouteState.add_route(form_data)
 
-    def _add_route_db(self, form_data: dict):
+    async def _add_route_db(self, form_data: dict):
         try:
-            with sqlite3.connect(DB_FILE) as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT INTO routes (setuserid, endpoint, connection) VALUES (?, ?, ?)",
-                    (
-                        form_data["setuserid"],
-                        form_data["endpoint"],
-                        form_data["connection"],
+            async with rx.asession() as session:
+                await session.execute(
+                    text(
+                        "INSERT INTO routes (setuserid, endpoint, connection) VALUES (:setuserid, :endpoint, :connection)"
                     ),
+                    params=form_data,
                 )
-                conn.commit()
+                await session.commit()
         except Exception as e:
             logging.exception(f"Error adding route: {e}")
 
     @rx.event
-    def add_route(self, form_data: dict):
-        self._add_route_db(form_data)
+    async def add_route(self, form_data: dict):
+        await self._add_route_db(form_data)
         yield RouteState.fetch_routes
         self.is_editing = False
 
-    def _update_route_db(self, form_data: dict):
+    async def _update_route_db(self, form_data: dict):
         if not self.selected_route:
             return
         try:
-            with sqlite3.connect(DB_FILE) as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE routes SET endpoint=?, connection=? WHERE setuserid=?",
-                    (
-                        form_data["endpoint"],
-                        form_data["connection"],
-                        self.selected_route["setuserid"],
+            async with rx.asession() as session:
+                params = {
+                    "endpoint": form_data["endpoint"],
+                    "connection": form_data["connection"],
+                    "setuserid": self.selected_route["setuserid"],
+                }
+                await session.execute(
+                    text(
+                        "UPDATE routes SET endpoint=:endpoint, connection=:connection WHERE setuserid=:setuserid"
                     ),
+                    params=params,
                 )
-                conn.commit()
+                await session.commit()
         except Exception as e:
             logging.exception(f"Error updating route: {e}")
 
     @rx.event
-    def update_route(self, form_data: dict):
-        self._update_route_db(form_data)
+    async def update_route(self, form_data: dict):
+        await self._update_route_db(form_data)
         yield RouteState.fetch_routes
         yield RouteState.deselect_route
 
-    def _delete_route_db(self, route_id: str):
+    async def _delete_route_db(self, route_id: str):
         try:
-            with sqlite3.connect(DB_FILE) as conn:
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM routes WHERE setuserid=?", (route_id,))
-                conn.commit()
+            async with rx.asession() as session:
+                await session.execute(
+                    text("DELETE FROM routes WHERE setuserid=:setuserid"),
+                    params={"setuserid": route_id},
+                )
+                await session.commit()
         except Exception as e:
             logging.exception(f"Error deleting route: {e}")
 
     @rx.event
-    def delete_route(self, route_id: str):
-        self._delete_route_db(route_id)
+    async def delete_route(self, route_id: str):
+        await self._delete_route_db(route_id)
         yield RouteState.fetch_routes
         yield RouteState.deselect_route
 
