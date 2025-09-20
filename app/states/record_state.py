@@ -39,7 +39,7 @@ class RecordState(rx.State):
     async def fetch_records(self):
         try:
             with engine.connect() as conn:
-                df = pd.read_sql("SELECT * FROM records ORDER BY created_at DESC", conn)
+                df = pd.read_sql("SELECT * FROM record ORDER BY created_at DESC", conn)
             if "created_at" in df.columns:
                 df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
                     "%Y-%m-%d %H:%M:%S"
