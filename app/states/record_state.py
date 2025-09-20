@@ -2,10 +2,13 @@ import reflex as rx
 import reflex_enterprise as rxe
 from reflex_enterprise.components.map.types import LatLng, latlng
 import pandas as pd
+import sqlalchemy
 import json
 import logging
 from typing import TypedDict
-from sqlalchemy import text
+
+DATABASE_URL = "postgresql://appdeveloper:GDwIvB9TEp1b9Y2LEJy31lds4Scga3ir@dpg-d1v92jje5dus739jbm4g-a.oregon-postgres.render.com/staysecure365_db"
+engine = sqlalchemy.create_engine(DATABASE_URL)
 
 
 class Record(TypedDict):
@@ -35,23 +38,15 @@ class RecordState(rx.State):
     @rx.event
     async def fetch_records(self):
         try:
-            async with rx.asession() as session:
-                result = await session.execute(
-                    text("SELECT * FROM records ORDER BY created_at DESC")
+            with engine.connect() as conn:
+                df = pd.read_sql("SELECT * FROM records ORDER BY created_at DESC", conn)
+            if "created_at" in df.columns:
+                df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
+                    "%Y-%m-%d %H:%M:%S"
                 )
-                records = result.mappings().all()
-            df = pd.DataFrame(records)
-            if not df.empty:
-                if "created_at" in df.columns:
-                    df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                self.records = df.to_dict("records")
-                unique_usernames = sorted(df["username"].dropna().unique().tolist())
-                self.usernames = ["All"] + unique_usernames
-            else:
-                self.records = []
-                self.usernames = ["All"]
+            self.records = df.to_dict("records")
+            unique_usernames = sorted(df["username"].dropna().unique().tolist())
+            self.usernames = ["All"] + unique_usernames
         except Exception as e:
             logging.exception(f"Error fetching records: {e}")
             self.records = []
