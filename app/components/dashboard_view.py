@@ -4,6 +4,8 @@ from app.states.record_state import RecordState
 from app.components.map_view import map_view
 from app.components.record_table import record_table
 from app.components.record_details import record_details
+from app.components.routes_table import routes_table
+from app.components.subscriptions_table import subscriptions_table
 
 
 def header_component() -> rx.Component:
@@ -106,8 +108,8 @@ def dashboard_view() -> rx.Component:
             rx.match(
                 RecordState.active_tab,
                 ("Dashboard", dashboard_tab_content()),
-                ("Manage Routes", placeholder_content("Manage Routes")),
-                ("Manage Subscriptions", placeholder_content("Manage Subscriptions")),
+                ("Manage Routes", routes_table()),
+                ("Manage Subscriptions", subscriptions_table()),
                 ("CommuniCare (Unity)", placeholder_content("CommuniCare (Unity)")),
                 dashboard_tab_content(),
             ),
