@@ -71,29 +71,55 @@ class SubscriptionsState(rx.State):
             return rx.toast.error("User ID is required.")
         is_valid = form_data.get("is_valid", False)
         is_fully_licensed = form_data.get("is_fully_licensed", False)
-        if self.editing_subscription:
-            sub_id = self.editing_subscription["id"]
-            for i, sub in enumerate(self.subscriptions):
-                if sub["id"] == sub_id:
-                    self.subscriptions[i]["user_id"] = user_id
-                    self.subscriptions[i]["is_valid"] = is_valid
-                    self.subscriptions[i]["is_fully_licensed"] = is_fully_licensed
-                    break
-            yield rx.toast.success("Subscription updated successfully.")
-        else:
-            new_id = max([s["id"] for s in self.subscriptions] or [0]) + 1
-            new_sub = {
-                "id": new_id,
-                "user_id": user_id,
-                "is_valid": is_valid,
-                "is_fully_licensed": is_fully_licensed,
-            }
-            self.subscriptions.append(new_sub)
-            yield rx.toast.success("Subscription added successfully.")
+        try:
+            with engine.connect() as conn:
+                if self.editing_subscription:
+                    sub_id = self.editing_subscription["id"]
+                    stmt = sqlalchemy.text(
+                        "UPDATE subscriptions SET user_id = :user_id, is_valid = :is_valid, is_fully_licensed = :is_fully_licensed WHERE id = :id"
+                    )
+                    conn.execute(
+                        stmt,
+                        parameters={
+                            "user_id": user_id,
+                            "is_valid": is_valid,
+                            "is_fully_licensed": is_fully_licensed,
+                            "id": sub_id,
+                        },
+                    )
+                    conn.commit()
+                    yield rx.toast.success("Subscription updated successfully.")
+                else:
+                    stmt = sqlalchemy.text(
+                        "INSERT INTO subscriptions (user_id, is_valid, is_fully_licensed) VALUES (:user_id, :is_valid, :is_fully_licensed)"
+                    )
+                    conn.execute(
+                        stmt,
+                        parameters={
+                            "user_id": user_id,
+                            "is_valid": is_valid,
+                            "is_fully_licensed": is_fully_licensed,
+                        },
+                    )
+                    conn.commit()
+                    yield rx.toast.success("Subscription added successfully.")
+        except Exception as e:
+            logging.exception(f"Error saving subscription: {e}")
+            yield rx.toast.error("Failed to save subscription.")
         self._reset_edit_state()
+        yield SubscriptionsState.fetch_subscriptions
 
     @rx.event
     def delete_subscription(self, sub_id: int):
+        try:
+            with engine.connect() as conn:
+                stmt = sqlalchemy.text("DELETE FROM subscriptions WHERE id = :id")
+                conn.execute(stmt, parameters={"id": sub_id})
+                conn.commit()
+        except Exception as e:
+            logging.exception(f"Error deleting subscription: {e}")
+            yield rx.toast.error("Failed to delete subscription.")
+            return
         self.subscriptions = [s for s in self.subscriptions if s["id"] != sub_id]
         yield rx.toast.info("Subscription deleted.")
 
@@ -122,7 +148,20 @@ class SubscriptionsState(rx.State):
 
     @rx.event
     def delete_selected(self):
+        if not self.selected_subscriptions:
+            return
         deleted_count = len(self.selected_subscriptions)
+        try:
+            with engine.connect() as conn:
+                stmt = sqlalchemy.text("DELETE FROM subscriptions WHERE id = ANY(:ids)")
+                conn.execute(
+                    stmt, parameters={"ids": list(self.selected_subscriptions)}
+                )
+                conn.commit()
+        except Exception as e:
+            logging.exception(f"Error deleting selected subscriptions: {e}")
+            yield rx.toast.error("Failed to delete subscriptions.")
+            return
         self.subscriptions = [
             s for s in self.subscriptions if s["id"] not in self.selected_subscriptions
         ]

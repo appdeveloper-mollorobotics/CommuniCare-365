@@ -6,6 +6,7 @@ from app.components.record_table import record_table
 from app.components.record_details import record_details
 from app.components.routes_table import routes_table
 from app.components.subscriptions_table import subscriptions_table
+from app.components.communicare_view import communicare_view
 
 
 def header_component() -> rx.Component:
@@ -85,21 +86,6 @@ def dashboard_tab_content() -> rx.Component:
     )
 
 
-def placeholder_content(title: str) -> rx.Component:
-    return rx.el.div(
-        rx.el.h1(title, class_name="text-2xl font-bold"),
-        rx.el.p(
-            "Content for this page is under construction.",
-            class_name="text-gray-500 mt-2",
-        ),
-        rx.image(
-            src="/placeholder.svg",
-            class_name="w-full h-auto rounded-xl mt-4 opacity-50",
-        ),
-        class_name="p-6 text-center",
-    )
-
-
 def dashboard_view() -> rx.Component:
     return rx.el.div(
         header_component(),
@@ -110,7 +96,7 @@ def dashboard_view() -> rx.Component:
                 ("Dashboard", dashboard_tab_content()),
                 ("Manage Routes", routes_table()),
                 ("Manage Subscriptions", subscriptions_table()),
-                ("CommuniCare (Unity)", placeholder_content("CommuniCare (Unity)")),
+                ("CommuniCare (Unity)", communicare_view()),
                 dashboard_tab_content(),
             ),
             class_name="overflow-y-auto",
