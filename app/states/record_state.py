@@ -43,6 +43,10 @@ class RecordState(rx.State):
         self.usernames = ["All"]
         try:
             engine = await self._get_engine()
+            inspector = sqlalchemy.inspect(engine)
+            if not inspector.has_table("records"):
+                logging.warning("Table 'records' not found, skipping fetch.")
+                return
             with engine.connect() as conn:
                 df = pd.read_sql("SELECT * FROM records", conn)
             self.records = df.to_dict("records")
