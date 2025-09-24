@@ -139,7 +139,7 @@ def subscriptions_table() -> rx.Component:
                                 rx.el.input(
                                     type="checkbox",
                                     on_change=lambda checked: SubscriptionsState.toggle_selection(
-                                        sub["id"], checked
+                                        sub["id"], checked.to(bool)
                                     ),
                                     checked=SubscriptionsState.selected_subscriptions.contains(
                                         sub["id"]

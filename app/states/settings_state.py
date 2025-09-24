@@ -27,6 +27,8 @@ class SettingsState(rx.State):
     @rx.event
     def toggle_show_dialog(self):
         self.show_dialog = not self.show_dialog
+        if self.show_dialog:
+            pass
 
     def toggle_show_password(self, field_name: str):
         self.show_passwords[field_name] = not self.show_passwords[field_name]

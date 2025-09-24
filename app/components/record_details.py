@@ -19,10 +19,12 @@ def record_details() -> rx.Component:
                     rx.el.h3("Record Details", class_name="text-xl font-bold"),
                     rx.el.div(
                         rx.el.a(
-                            rx.icon("message-circle", size=20),
+                            rx.icon(
+                                "message-circle", size=24, class_name="text-green-500"
+                            ),
                             href=f"https://wa.me/{RecordState.selected_record['contact_number']}",
                             is_external=True,
-                            class_name="p-1 text-green-600 hover:bg-gray-200 rounded-full",
+                            class_name="p-1 hover:bg-gray-200 rounded-full",
                         ),
                         rx.el.button(
                             "Assign",
@@ -50,8 +52,7 @@ def record_details() -> rx.Component:
                     ),
                     class_name="w-full text-sm table-fixed",
                 ),
-                rx.el.hr(class_name="my-4"),
-                rx.el.h4("Images", class_name="font-semibold text-md mb-2"),
+                rx.el.h4("Images", class_name="font-semibold text-md mt-4 mb-2"),
                 rx.el.div(
                     rx.foreach(
                         RecordState.image_urls,

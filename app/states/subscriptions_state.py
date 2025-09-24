@@ -18,7 +18,7 @@ class SubscriptionsState(rx.State):
     filter_user_id: str = ""
     show_edit_dialog: bool = False
     editing_subscription: Optional[Subscription] = None
-    selected_subscriptions: list[int] = []
+    selected_subscriptions: set[int] = set()
 
     async def _get_engine(self):
         settings_state = await self.get_state(SettingsState)
@@ -131,13 +131,12 @@ class SubscriptionsState(rx.State):
 
     @rx.event
     def toggle_selection(self, sub_id: int, checked: bool):
-        current_list = list(self.selected_subscriptions)
+        current_set = set(self.selected_subscriptions)
         if checked:
-            if sub_id not in current_list:
-                current_list.append(sub_id)
-        elif sub_id in current_list:
-            current_list.remove(sub_id)
-        self.selected_subscriptions = current_list
+            current_set.add(sub_id)
+        else:
+            current_set.discard(sub_id)
+        self.selected_subscriptions = current_set
 
     @rx.var
     def all_selected(self) -> bool:
@@ -149,11 +148,11 @@ class SubscriptionsState(rx.State):
     @rx.event
     def toggle_select_all(self, checked: bool):
         if checked:
-            self.selected_subscriptions = [
-                sub["id"] for sub in self.filtered_subscriptions
-            ]
+            self.selected_subscriptions = {
+                sub["id"] for sub in self.filtered_subscriptions if "id" in sub
+            }
         else:
-            self.selected_subscriptions = []
+            self.selected_subscriptions = set()
 
     @rx.event
     async def delete_selected(self):
@@ -164,7 +163,9 @@ class SubscriptionsState(rx.State):
             engine = await self._get_engine()
             with engine.connect() as conn:
                 stmt = sqlalchemy.text("DELETE FROM subscriptions WHERE id = ANY(:ids)")
-                conn.execute(stmt, parameters={"ids": self.selected_subscriptions})
+                conn.execute(
+                    stmt, parameters={"ids": list(self.selected_subscriptions)}
+                )
                 conn.commit()
         except Exception as e:
             logging.exception(f"Error deleting selected subscriptions: {e}")
@@ -173,7 +174,7 @@ class SubscriptionsState(rx.State):
         self.subscriptions = [
             s for s in self.subscriptions if s["id"] not in self.selected_subscriptions
         ]
-        self.selected_subscriptions = []
+        self.selected_subscriptions = set()
         yield rx.toast.info(f"Deleted {deleted_count} subscriptions.")
 
     @rx.event
