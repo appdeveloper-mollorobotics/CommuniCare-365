@@ -1,6 +1,7 @@
 import reflex as rx
 from app.states.auth_state import AuthState
 from app.states.record_state import RecordState
+from app.states.settings_state import SettingsState
 from app.components.map_view import map_view
 from app.components.record_table import record_table
 from app.components.record_details import record_details
@@ -23,7 +24,7 @@ def header_component() -> rx.Component:
         rx.el.div(
             rx.el.button(
                 rx.icon("settings", size=20),
-                on_click=lambda: RecordState.set_active_tab("Settings"),
+                on_click=SettingsState.toggle_show_dialog,
                 class_name="p-2 rounded-md hover:bg-gray-200",
             ),
             rx.el.button(
@@ -38,13 +39,7 @@ def header_component() -> rx.Component:
 
 
 def tabs_component() -> rx.Component:
-    tabs = [
-        "Dashboard",
-        "Manage Routes",
-        "Manage Subscriptions",
-        "CommuniCare (Unity)",
-        "Settings",
-    ]
+    tabs = ["Dashboard", "Manage Routes", "Manage Subscriptions", "CommuniCare (Unity)"]
     return rx.el.div(
         rx.foreach(
             tabs,
@@ -105,6 +100,7 @@ def dashboard_view() -> rx.Component:
     return rx.el.div(
         header_component(),
         tabs_component(),
+        settings_view(),
         rx.el.div(
             rx.match(
                 RecordState.active_tab,
@@ -112,7 +108,6 @@ def dashboard_view() -> rx.Component:
                 ("Manage Routes", routes_table()),
                 ("Manage Subscriptions", subscriptions_table()),
                 ("CommuniCare (Unity)", communicare_view()),
-                ("Settings", settings_view()),
                 dashboard_tab_content(),
             ),
             class_name="overflow-y-auto",

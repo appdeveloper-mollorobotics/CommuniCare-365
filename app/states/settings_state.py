@@ -9,9 +9,15 @@ class SettingsState(rx.State):
     ably_api_key: str = rx.LocalStorage(
         "pFIw1g.499zGg:nKBRLfocPzJeIA_Uwe7vXw5MbPsnj7EB1dk3P8X4WsQ", name="ably_api_key"
     )
+    show_dialog: bool = False
 
     @rx.event
     def save_settings(self, form_data: dict):
         self.database_url = form_data["database_url"]
         self.ably_api_key = form_data["ably_api_key"]
+        self.show_dialog = False
         return rx.toast.success("Settings saved successfully!")
+
+    @rx.event
+    def toggle_show_dialog(self):
+        self.show_dialog = not self.show_dialog

@@ -76,6 +76,3 @@ class AblyState(rx.State):
             self.entry_1_text = ""
         except AblyException as e:
             logging.exception(f"Error broadcasting data: {e}")
-
-    def trace_selected_vehicle(self, row_data: VehicleData):
-        pass

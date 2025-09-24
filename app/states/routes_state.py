@@ -142,11 +142,11 @@ class RoutesState(rx.State):
         yield rx.toast.info("Route deleted.")
 
     @rx.event
-    def toggle_selection(self, endpoint: str):
-        if endpoint in self.selected_routes:
-            self.selected_routes.remove(endpoint)
-        else:
+    def toggle_selection(self, endpoint: str, checked: bool):
+        if checked:
             self.selected_routes.add(endpoint)
+        elif endpoint in self.selected_routes:
+            self.selected_routes.remove(endpoint)
 
     @rx.var
     def all_selected(self) -> bool:

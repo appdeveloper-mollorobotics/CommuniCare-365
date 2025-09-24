@@ -29,6 +29,8 @@ class RecordState(rx.State):
     map_center: LatLng = latlng(lat=25.0, lng=25.0)
     map_zoom: float = 4.5
     active_tab: str = "Dashboard"
+    trace_vehicle_reg: str = ""
+    trace_path: list[LatLng] = []
 
     async def _get_engine(self):
         settings_state = await self.get_state(SettingsState)
@@ -116,3 +118,35 @@ class RecordState(rx.State):
         if coords:
             self.map_center = latlng(lat=coords[0], lng=coords[1])
             self.map_zoom = 15.0
+
+    @rx.event
+    def set_trace_vehicle_reg(self, reg: str):
+        self.trace_vehicle_reg = reg
+
+    @rx.event
+    def trace_vehicle(self):
+        if not self.trace_vehicle_reg:
+            return rx.toast.warning("Please enter a vehicle registration.")
+        vehicle_records = [
+            r for r in self.records if r["vehicle_reg"] == self.trace_vehicle_reg
+        ]
+        if not vehicle_records:
+            self.trace_path = []
+            return rx.toast.info(f"No records found for {self.trace_vehicle_reg}")
+        try:
+            sorted_records = sorted(
+                vehicle_records, key=lambda r: pd.to_datetime(r["created_at"])
+            )
+        except Exception as e:
+            logging.exception(f"Error sorting records by date: {e}")
+            sorted_records = vehicle_records
+        path = []
+        for record in sorted_records:
+            coords = self._parse_gps(record["gps_location"])
+            if coords:
+                path.append(latlng(lat=coords[0], lng=coords[1]))
+        self.trace_path = path
+        if path:
+            self.map_center = path[0]
+            self.map_zoom = 12.0
+            return rx.toast.success(f"Showing trace for {self.trace_vehicle_reg}")

@@ -161,8 +161,8 @@ def routes_table() -> rx.Component:
                             rx.el.td(
                                 rx.el.input(
                                     type="checkbox",
-                                    on_change=lambda: RoutesState.toggle_selection(
-                                        route["endpoint"]
+                                    on_change=lambda checked: RoutesState.toggle_selection(
+                                        route["endpoint"], checked
                                     ),
                                     checked=RoutesState.selected_routes.contains(
                                         route["endpoint"]

@@ -130,11 +130,11 @@ class SubscriptionsState(rx.State):
         yield rx.toast.info("Subscription deleted.")
 
     @rx.event
-    def toggle_selection(self, sub_id: int):
-        if sub_id in self.selected_subscriptions:
-            self.selected_subscriptions.remove(sub_id)
-        else:
+    def toggle_selection(self, sub_id: int, checked: bool):
+        if checked:
             self.selected_subscriptions.add(sub_id)
+        elif sub_id in self.selected_subscriptions:
+            self.selected_subscriptions.remove(sub_id)
 
     @rx.var
     def all_selected(self) -> bool:
