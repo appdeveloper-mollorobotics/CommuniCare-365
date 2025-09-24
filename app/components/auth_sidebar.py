@@ -6,7 +6,8 @@ def auth_sidebar() -> rx.Component:
     return rx.el.div(
         rx.el.div(
             rx.el.h2(
-                "🔐 StaySecure Monitor 365", class_name="text-2xl font-bold text-center"
+                "🔐 CommuniCare EcoSystem 365°",
+                class_name="text-2xl font-bold text-center",
             ),
             rx.el.p(
                 "Please log in to continue",

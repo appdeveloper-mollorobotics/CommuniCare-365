@@ -143,10 +143,12 @@ class RoutesState(rx.State):
 
     @rx.event
     def toggle_selection(self, endpoint: str, checked: bool):
+        current_set = set(self.selected_routes)
         if checked:
-            self.selected_routes.add(endpoint)
-        elif endpoint in self.selected_routes:
-            self.selected_routes.remove(endpoint)
+            current_set.add(endpoint)
+        else:
+            current_set.discard(endpoint)
+        self.selected_routes = current_set
 
     @rx.var
     def all_selected(self) -> bool:

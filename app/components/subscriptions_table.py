@@ -99,7 +99,7 @@ def subscriptions_table() -> rx.Component:
                 rx.el.button(
                     "Delete Selected",
                     on_click=SubscriptionsState.delete_selected,
-                    is_disabled=SubscriptionsState.selected_subscriptions.length() == 0,
+                    disabled=SubscriptionsState.selected_subscriptions.length() == 0,
                     class_name="px-4 py-2 bg-red-500 text-white rounded-md disabled:opacity-50",
                 ),
                 rx.el.button(

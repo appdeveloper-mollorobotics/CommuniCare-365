@@ -37,4 +37,4 @@ app = rxe.App(
         ),
     ],
 )
-app.add_page(index, title="StaySecure Monitor 365")
+app.add_page(index, title="CommuniCare EcoSystem 365°")

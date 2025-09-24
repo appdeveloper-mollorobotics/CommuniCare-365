@@ -14,7 +14,7 @@ from app.components.settings_view import settings_view
 def header_component() -> rx.Component:
     return rx.el.div(
         rx.el.div(
-            rx.el.h1("StaySecure Monitor 365", class_name="text-2xl font-bold"),
+            rx.el.h1("CommuniCare EcoSystem 365°", class_name="text-2xl font-bold"),
             rx.el.p(
                 rx.el.span("Welcome, "),
                 rx.el.span(AuthState.user_name, class_name="font-semibold"),
@@ -65,17 +65,25 @@ def filter_controls() -> rx.Component:
             value=RecordState.selected_username,
             class_name="p-2 border rounded-md bg-white text-sm",
         ),
-        rx.el.input(
-            type="date",
-            on_change=RecordState.set_start_date,
-            class_name="p-2 border rounded-md bg-white text-sm",
+        rx.el.div(
+            rx.el.span("From", class_name="text-sm font-medium text-gray-700 mr-2"),
+            rx.el.input(
+                type="date",
+                on_change=RecordState.set_start_date,
+                class_name="p-2 border rounded-md bg-white text-sm",
+            ),
+            class_name="flex items-center",
         ),
-        rx.el.input(
-            type="date",
-            on_change=RecordState.set_end_date,
-            class_name="p-2 border rounded-md bg-white text-sm",
+        rx.el.div(
+            rx.el.span("To", class_name="text-sm font-medium text-gray-700 mr-2"),
+            rx.el.input(
+                type="date",
+                on_change=RecordState.set_end_date,
+                class_name="p-2 border rounded-md bg-white text-sm",
+            ),
+            class_name="flex items-center",
         ),
-        class_name="flex items-center space-x-2 flex-wrap",
+        class_name="flex items-center space-x-4 flex-wrap",
     )
 
 

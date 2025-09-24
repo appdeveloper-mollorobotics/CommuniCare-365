@@ -14,7 +14,7 @@ def communicare_view() -> rx.Component:
                     rx.el.input(
                         on_change=AblyState.set_entry_1_text,
                         placeholder="Enter vehicle registration",
-                        class_name="p-2 border rounded-md w-full",
+                        class_name="p-2 border rounded-md w-full uppercase",
                         default_value=AblyState.entry_1_text,
                     ),
                     rx.el.button(

@@ -8,6 +8,7 @@ class AuthState(rx.State):
     login_status: str = ""
     register_status: str = ""
     reset_status: str = ""
+    change_password_status: str = ""
 
     @rx.event
     def login(self, form_data: dict):
@@ -49,3 +50,20 @@ class AuthState(rx.State):
         self.is_logged_in = False
         self.user_name = ""
         self.login_status = ""
+        self.change_password_status = ""
+
+    @rx.event
+    def change_password(self, form_data: dict):
+        current_password = form_data["current_password"]
+        new_password = form_data["new_password"]
+        if not self.is_logged_in or not self.user_name:
+            self.change_password_status = "Error: Not logged in."
+            return
+        if self.USER_DB.get(self.user_name) != current_password:
+            self.change_password_status = "Error: Current password incorrect."
+            return
+        if not new_password:
+            self.change_password_status = "Error: New password cannot be empty."
+            return
+        self.USER_DB[self.user_name] = new_password
+        self.change_password_status = "Password changed successfully."

@@ -15,7 +15,26 @@ def record_details() -> rx.Component:
         rx.cond(
             RecordState.selected_record,
             rx.el.div(
-                rx.el.h3("Record Details", class_name="text-xl font-bold mb-4"),
+                rx.el.div(
+                    rx.el.h3("Record Details", class_name="text-xl font-bold"),
+                    rx.el.div(
+                        rx.el.a(
+                            rx.icon("message-circle", size=20),
+                            href=f"https://wa.me/{RecordState.selected_record['contact_number']}",
+                            is_external=True,
+                            class_name="p-1 text-green-600 hover:bg-gray-200 rounded-full",
+                        ),
+                        rx.el.button(
+                            "Assign",
+                            on_click=lambda: rx.toast.info(
+                                "Assign functionality not implemented."
+                            ),
+                            class_name="px-3 py-1 bg-blue-500 text-white text-xs font-semibold rounded-md hover:bg-blue-600",
+                        ),
+                        class_name="flex items-center space-x-2",
+                    ),
+                    class_name="flex justify-between items-center mb-4",
+                ),
                 rx.el.table(
                     rx.el.tbody(
                         detail_row(

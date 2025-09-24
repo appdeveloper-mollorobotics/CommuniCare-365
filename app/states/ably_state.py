@@ -19,6 +19,10 @@ class AblyState(rx.State):
     channel_name: str = "chat"
     vehicle_data: list[VehicleData] = []
     entry_1_text: str = ""
+
+    def set_entry_1_text(self, text: str):
+        self.entry_1_text = text.upper()
+
     _client: AblyRealtime | None = None
     _channel: asyncio.Future | None = None
 

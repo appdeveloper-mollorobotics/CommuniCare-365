@@ -47,12 +47,56 @@ class RecordState(rx.State):
             engine = await self._get_engine()
             inspector = sqlalchemy.inspect(engine)
             if not inspector.has_table("records"):
-                logging.warning("Table 'records' not found, skipping fetch.")
+                logging.warning("Table 'records' not found, using sample data.")
+                self.records = [
+                    {
+                        "userid": 1,
+                        "username": "sample_user",
+                        "vehicle_reg": "XYZ-123",
+                        "created_at": "2024-05-20 10:00:00",
+                        "contact_number": "1234567890",
+                        "gps_location": "34.0522,-118.2437",
+                        "images": "[]",
+                    },
+                    {
+                        "userid": 2,
+                        "username": "another_user",
+                        "vehicle_reg": "ABC-456",
+                        "created_at": "2024-05-20 11:30:00",
+                        "contact_number": "0987654321",
+                        "gps_location": "40.7128,-74.0060",
+                        "images": "[]",
+                    },
+                ]
+                self.usernames.extend(["sample_user", "another_user"])
                 return
             with engine.connect() as conn:
                 df = pd.read_sql("SELECT * FROM records", conn)
-            self.records = df.to_dict("records")
-            self.usernames.extend(df["username"].unique().tolist())
+            if df.empty:
+                self.records = [
+                    {
+                        "userid": 1,
+                        "username": "sample_user",
+                        "vehicle_reg": "XYZ-123",
+                        "created_at": "2024-05-20 10:00:00",
+                        "contact_number": "1234567890",
+                        "gps_location": "34.0522,-118.2437",
+                        "images": "[]",
+                    },
+                    {
+                        "userid": 2,
+                        "username": "another_user",
+                        "vehicle_reg": "ABC-456",
+                        "created_at": "2024-05-20 11:30:00",
+                        "contact_number": "0987654321",
+                        "gps_location": "40.7128,-74.0060",
+                        "images": "[]",
+                    },
+                ]
+                self.usernames.extend(["sample_user", "another_user"])
+            else:
+                self.records = df.to_dict("records")
+                self.usernames.extend(df["username"].unique().tolist())
         except Exception as e:
             logging.exception(f"Error fetching records: {e}")
 
@@ -103,13 +147,15 @@ class RecordState(rx.State):
     @rx.var
     def image_urls(self) -> list[str]:
         if not self.selected_record or not self.selected_record["images"]:
-            return []
+            return ["/placeholder.svg"]
         try:
             image_filenames = json.loads(self.selected_record["images"])
+            if not image_filenames:
+                return ["/placeholder.svg"]
             return [f"/received_images/{fname}" for fname in image_filenames]
-        except Exception as e:
-            logging.exception(f"Error parsing image URLs: {e}")
-            return []
+        except (json.JSONDecodeError, TypeError) as e:
+            logging.exception(f"Error decoding image JSON: {e}")
+            return ["/placeholder.svg"]
 
     @rx.event
     def show_details(self, record: Record):
