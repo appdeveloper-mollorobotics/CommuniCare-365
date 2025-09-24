@@ -6,9 +6,7 @@ import sqlalchemy
 import json
 import logging
 from typing import TypedDict
-
-DATABASE_URL = "postgresql://appdeveloper:GDwIvB9TEp1b9Y2LEJy31lds4Scga3ir@dpg-d1v92jje5dus739jbm4g-a.oregon-postgres.render.com/staysecure365_db"
-engine = sqlalchemy.create_engine(DATABASE_URL)
+from app.states.settings_state import SettingsState
 
 
 class Record(TypedDict):
@@ -32,6 +30,10 @@ class RecordState(rx.State):
     map_zoom: float = 4.5
     active_tab: str = "Dashboard"
 
+    async def _get_engine(self):
+        settings_state = await self.get_state(SettingsState)
+        return sqlalchemy.create_engine(settings_state.database_url)
+
     def set_active_tab(self, tab: str):
         self.active_tab = tab
 
@@ -39,6 +41,14 @@ class RecordState(rx.State):
     async def fetch_records(self):
         self.records = []
         self.usernames = ["All"]
+        try:
+            engine = await self._get_engine()
+            with engine.connect() as conn:
+                df = pd.read_sql("SELECT * FROM records", conn)
+            self.records = df.to_dict("records")
+            self.usernames.extend(df["username"].unique().tolist())
+        except Exception as e:
+            logging.exception(f"Error fetching records: {e}")
 
     @rx.var
     def filtered_records(self) -> list[Record]:

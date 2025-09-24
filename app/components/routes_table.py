@@ -54,6 +54,32 @@ def edit_route_dialog() -> rx.Component:
                     class_name="space-y-2 mt-4",
                 ),
                 rx.el.div(
+                    rx.el.label("Optional", class_name="font-medium"),
+                    rx.el.input(
+                        name="optional",
+                        default_value=rx.cond(
+                            RoutesState.editing_route,
+                            RoutesState.editing_route["optional"],
+                            "",
+                        ),
+                        class_name="w-full p-2 border rounded-md",
+                    ),
+                    class_name="space-y-2 mt-4",
+                ),
+                rx.el.div(
+                    rx.el.label("IMEI Number", class_name="font-medium"),
+                    rx.el.input(
+                        name="imei_number",
+                        default_value=rx.cond(
+                            RoutesState.editing_route,
+                            RoutesState.editing_route["imei_number"],
+                            "",
+                        ),
+                        class_name="w-full p-2 border rounded-md",
+                    ),
+                    class_name="space-y-2 mt-4",
+                ),
+                rx.el.div(
                     rx.dialog.close(
                         rx.el.button(
                             "Cancel",
@@ -122,6 +148,8 @@ def routes_table() -> rx.Component:
                         rx.el.th("Set User ID", class_name="px-4 py-2"),
                         rx.el.th("Endpoint", class_name="px-4 py-2"),
                         rx.el.th("Connection", class_name="px-4 py-2"),
+                        rx.el.th("Optional", class_name="px-4 py-2"),
+                        rx.el.th("IMEI Number", class_name="px-4 py-2"),
                         rx.el.th("Actions", class_name="px-4 py-2"),
                         class_name="text-left bg-gray-50 border-b",
                     )
@@ -145,6 +173,8 @@ def routes_table() -> rx.Component:
                             rx.el.td(route["setuserid"], class_name="px-4 py-2"),
                             rx.el.td(route["endpoint"], class_name="px-4 py-2"),
                             rx.el.td(route["connection"], class_name="px-4 py-2"),
+                            rx.el.td(route["optional"], class_name="px-4 py-2"),
+                            rx.el.td(route["imei_number"], class_name="px-4 py-2"),
                             rx.el.td(
                                 rx.el.div(
                                     rx.el.button(

@@ -4,6 +4,7 @@ import datetime
 from typing import TypedDict
 import logging
 from ably import AblyRealtime, AblyException
+from app.states.settings_state import SettingsState
 
 
 class VehicleData(TypedDict):
@@ -14,7 +15,6 @@ class VehicleData(TypedDict):
 
 
 class AblyState(rx.State):
-    api_key: str = "pFIw1g.499zGg:nKBRLfocPzJeIA_Uwe7vXw5MbPsnj7EB1dk3P8X4WsQ"
     client_id: str = "unity10i99p2"
     channel_name: str = "chat"
     vehicle_data: list[VehicleData] = []
@@ -27,7 +27,10 @@ class AblyState(rx.State):
         if self._client is not None:
             return
         try:
-            self._client = AblyRealtime(self.api_key, client_id=self.client_id)
+            settings_state = await self.get_state(SettingsState)
+            self._client = AblyRealtime(
+                settings_state.ably_api_key, client_id=self.client_id
+            )
             self._channel = self._client.channels.get(self.channel_name)
             await self._channel.subscribe("chat-message", self._message_handler)
             print("Server is listening for incoming messages...")

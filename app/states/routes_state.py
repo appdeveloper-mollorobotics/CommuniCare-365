@@ -3,15 +3,15 @@ import pandas as pd
 import sqlalchemy
 import logging
 from typing import TypedDict, Optional
-
-DATABASE_URL = "postgresql://appdeveloper:GDwIvB9TEp1b9Y2LEJy31lds4Scga3ir@dpg-d1v92jje5dus739jbm4g-a.oregon-postgres.render.com/staysecure365_db"
-engine = sqlalchemy.create_engine(DATABASE_URL)
+from app.states.settings_state import SettingsState
 
 
 class Route(TypedDict):
     setuserid: str
     endpoint: str
     connection: str
+    optional: str
+    imei_number: str
 
 
 class RoutesState(rx.State):
@@ -22,11 +22,21 @@ class RoutesState(rx.State):
     selected_routes: set[str] = set()
     connection_options: list[str] = ["webhook", "custom"]
 
+    async def _get_engine(self):
+        settings_state = await self.get_state(SettingsState)
+        return sqlalchemy.create_engine(settings_state.database_url)
+
     @rx.event
     async def fetch_routes(self):
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
-                df = pd.read_sql("SELECT * FROM routes", conn)
+                df = pd.read_sql(
+                    "SELECT setuserid, endpoint, connection, optional, imei_number FROM routes",
+                    conn,
+                )
+            df["optional"] = df["optional"].fillna("")
+            df["imei_number"] = df["imei_number"].fillna("")
             self.routes = df.to_dict("records")
         except Exception as e:
             logging.exception(f"Error fetching routes: {e}")
@@ -42,6 +52,8 @@ class RoutesState(rx.State):
             if self.filter_text.lower() in r["setuserid"].lower()
             or self.filter_text.lower() in r["endpoint"].lower()
             or self.filter_text.lower() in r["connection"].lower()
+            or (self.filter_text.lower() in str(r.get("optional", "")).lower())
+            or (self.filter_text.lower() in str(r.get("imei_number", "")).lower())
         ]
 
     def _reset_edit_state(self):
@@ -63,40 +75,47 @@ class RoutesState(rx.State):
         self._reset_edit_state()
 
     @rx.event
-    def save_route(self, form_data: dict):
+    async def save_route(self, form_data: dict):
         setuserid = form_data.get("setuserid")
         endpoint = form_data.get("endpoint")
         connection = form_data.get("connection")
+        optional = form_data.get("optional", "")
+        imei_number = form_data.get("imei_number", "")
         if not all([setuserid, endpoint, connection]):
-            return rx.toast.error("All fields are required.")
+            yield rx.toast.error("Set User ID, Endpoint and Connection are required.")
+            return
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 if self.editing_route:
                     original_endpoint = self.editing_route["endpoint"]
-                    stmt = sqlalchemy.text(
-                        "UPDATE routes SET setuserid = :setuserid, endpoint = :endpoint, connection = :connection WHERE endpoint = :original_endpoint"
-                    )
+                    stmt = sqlalchemy.text("""UPDATE routes SET setuserid = :setuserid, endpoint = :endpoint, 
+                        connection = :connection, optional = :optional, imei_number = :imei_number
+                        WHERE endpoint = :original_endpoint""")
                     conn.execute(
                         stmt,
                         parameters={
                             "setuserid": setuserid,
                             "endpoint": endpoint,
                             "connection": connection,
+                            "optional": optional,
+                            "imei_number": imei_number,
                             "original_endpoint": original_endpoint,
                         },
                     )
                     conn.commit()
                     yield rx.toast.success("Route updated successfully.")
                 else:
-                    stmt = sqlalchemy.text(
-                        "INSERT INTO routes (setuserid, endpoint, connection) VALUES (:setuserid, :endpoint, :connection)"
-                    )
+                    stmt = sqlalchemy.text("""INSERT INTO routes (setuserid, endpoint, connection, optional, imei_number) 
+                        VALUES (:setuserid, :endpoint, :connection, :optional, :imei_number)""")
                     conn.execute(
                         stmt,
                         parameters={
                             "setuserid": setuserid,
                             "endpoint": endpoint,
                             "connection": connection,
+                            "optional": optional,
+                            "imei_number": imei_number,
                         },
                     )
                     conn.commit()
@@ -108,8 +127,9 @@ class RoutesState(rx.State):
         yield RoutesState.fetch_routes
 
     @rx.event
-    def delete_route(self, endpoint: str):
+    async def delete_route(self, endpoint: str):
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 stmt = sqlalchemy.text("DELETE FROM routes WHERE endpoint = :endpoint")
                 conn.execute(stmt, parameters={"endpoint": endpoint})

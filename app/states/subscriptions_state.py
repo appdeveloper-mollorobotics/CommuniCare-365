@@ -3,9 +3,7 @@ import pandas as pd
 import sqlalchemy
 import logging
 from typing import TypedDict, Optional
-
-DATABASE_URL = "postgresql://appdeveloper:GDwIvB9TEp1b9Y2LEJy31lds4Scga3ir@dpg-d1v92jje5dus739jbm4g-a.oregon-postgres.render.com/staysecure365_db"
-engine = sqlalchemy.create_engine(DATABASE_URL)
+from app.states.settings_state import SettingsState
 
 
 class Subscription(TypedDict):
@@ -22,9 +20,14 @@ class SubscriptionsState(rx.State):
     editing_subscription: Optional[Subscription] = None
     selected_subscriptions: set[int] = set()
 
+    async def _get_engine(self):
+        settings_state = await self.get_state(SettingsState)
+        return sqlalchemy.create_engine(settings_state.database_url)
+
     @rx.event
     async def fetch_subscriptions(self):
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 df = pd.read_sql("SELECT * FROM subscriptions", conn)
                 if "is_valid" in df.columns:
@@ -65,13 +68,15 @@ class SubscriptionsState(rx.State):
         self._reset_edit_state()
 
     @rx.event
-    def save_subscription(self, form_data: dict):
+    async def save_subscription(self, form_data: dict):
         user_id = form_data.get("user_id")
         if not user_id:
-            return rx.toast.error("User ID is required.")
+            yield rx.toast.error("User ID is required.")
+            return
         is_valid = form_data.get("is_valid", False)
         is_fully_licensed = form_data.get("is_fully_licensed", False)
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 if self.editing_subscription:
                     sub_id = self.editing_subscription["id"]
@@ -110,8 +115,9 @@ class SubscriptionsState(rx.State):
         yield SubscriptionsState.fetch_subscriptions
 
     @rx.event
-    def delete_subscription(self, sub_id: int):
+    async def delete_subscription(self, sub_id: int):
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 stmt = sqlalchemy.text("DELETE FROM subscriptions WHERE id = :id")
                 conn.execute(stmt, parameters={"id": sub_id})
@@ -147,11 +153,12 @@ class SubscriptionsState(rx.State):
             }
 
     @rx.event
-    def delete_selected(self):
+    async def delete_selected(self):
         if not self.selected_subscriptions:
             return
         deleted_count = len(self.selected_subscriptions)
         try:
+            engine = await self._get_engine()
             with engine.connect() as conn:
                 stmt = sqlalchemy.text("DELETE FROM subscriptions WHERE id = ANY(:ids)")
                 conn.execute(

@@ -7,6 +7,7 @@ from app.components.record_details import record_details
 from app.components.routes_table import routes_table
 from app.components.subscriptions_table import subscriptions_table
 from app.components.communicare_view import communicare_view
+from app.components.settings_view import settings_view
 
 
 def header_component() -> rx.Component:
@@ -19,17 +20,31 @@ def header_component() -> rx.Component:
                 class_name="text-gray-600",
             ),
         ),
-        rx.el.button(
-            "Log out",
-            on_click=AuthState.logout,
-            class_name="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm font-semibold",
+        rx.el.div(
+            rx.el.button(
+                rx.icon("settings", size=20),
+                on_click=lambda: RecordState.set_active_tab("Settings"),
+                class_name="p-2 rounded-md hover:bg-gray-200",
+            ),
+            rx.el.button(
+                "Log out",
+                on_click=AuthState.logout,
+                class_name="p-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm font-semibold",
+            ),
+            class_name="flex items-center space-x-2",
         ),
         class_name="flex items-center justify-between w-full p-4 border-b border-gray-200 bg-gray-50/50 backdrop-blur-sm sticky top-0 z-20",
     )
 
 
 def tabs_component() -> rx.Component:
-    tabs = ["Dashboard", "Manage Routes", "Manage Subscriptions", "CommuniCare (Unity)"]
+    tabs = [
+        "Dashboard",
+        "Manage Routes",
+        "Manage Subscriptions",
+        "CommuniCare (Unity)",
+        "Settings",
+    ]
     return rx.el.div(
         rx.foreach(
             tabs,
@@ -97,6 +112,7 @@ def dashboard_view() -> rx.Component:
                 ("Manage Routes", routes_table()),
                 ("Manage Subscriptions", subscriptions_table()),
                 ("CommuniCare (Unity)", communicare_view()),
+                ("Settings", settings_view()),
                 dashboard_tab_content(),
             ),
             class_name="overflow-y-auto",
